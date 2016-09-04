@@ -12,22 +12,23 @@
 #define TFT_DC D4     // Data/Command pin for SPI TFT screen
 #define TFT_CS D8     // Chip select for TFT screen
 
-#define number_of_readings 100
-#define major_graduations 0.1 // number_of_readings / 10
-#define delay_val 50
+#define number_of_readings 100 // Number of readings to hold in an array
+#define major_graduations 0.1  // number_of_readings / 10 to set the scale graduations
+#define delay_val 200          // Meter refresh rate in mS
 
 // Use hardware SPI (on Uno, #13, #12, #11) and the above for CS/DC
 Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC);
 
 float start_angle = -2.5, end_angle = -0.62, last_value = -1, input_value = 0.00;
-int x = 155, y = 210, r = 150, scale = 0;
+int x = 155, y = 210, r = 150, scale = 0; // Meter needle X,Y coordinates plus radius all in pixels, values are for a 320x240 screen
 
 void display_meter(float scale){
   //tft.fillScreen(ILI9341_BLACK);
-  tft.setCursor(0,0);
-  tft.setTextSize(2);
-  tft.println("TFT Analogue Meter Example");
+  tft.setCursor(0,0);   // Set coursor to the top left for the title
+  tft.setTextSize(2);   // Set text size to normal for the ILI9341
+  tft.println("TFT Analogue Meter Example"); // Display the title
 
+  // Now draw the meter using a two pixel line to emphasise it
   for (float i = start_angle; i < end_angle; i = i + 0.01)
   {
     tft.drawPixel(x + cos(i) * r, y + sin(i) * r, ILI9341_WHITE); // center point is (x,y)
@@ -36,6 +37,7 @@ void display_meter(float scale){
   //  0 = start_angle
   // 10 = end_angle
   // per-unit step = start_angle + (end_angle-start_angle)*major_graduations) * value to be displayed
+  // Now draw the graduations and scale
   for (float i = start_angle; i < end_angle; i = i + (end_angle-start_angle)*major_graduations) 
   {
     tft.drawLine(x + cos(i) * r, y + sin(i) * r, x + cos(i) * r * 1.1, y + sin(i) * r * 1.1, ILI9341_WHITE); 
@@ -44,10 +46,11 @@ void display_meter(float scale){
     tft.println(scale,0);
     scale++;
   }
-  tft.drawCircle(x,y,5, ILI9341_GREEN);
-  tft.drawRoundRect(2,22, 310, 200, 15, ILI9341_GREEN);
+  tft.drawCircle(x,y,5, ILI9341_GREEN); // Draw a small circel around the meter needle hinge point
+  tft.drawRoundRect(2,22, 310, 200, 15, ILI9341_GREEN); // Draw the outer rectangle
 }
 
+// Draw the arrow head
 void arrow(int x1, int y1, int x2, int y2, int alength, int awidth, int colour) {
   float distance;
   int dx,dy,x2o,y2o,x3,y3,x4,y4,k;
@@ -69,6 +72,7 @@ void arrow(int x1, int y1, int x2, int y2, int alength, int awidth, int colour) 
   tft.drawLine(x2, y2, x4, y4, colour);
 } 
 
+// Draw the meter needle and add the arrow head
 void display_value (float value){
   int x2,y2;
   x2 = x + cos(start_angle+(end_angle-start_angle)*major_graduations*last_value) * r * 0.98;
@@ -89,22 +93,22 @@ void display_value (float value){
 
 void setup(){
   Serial.begin(115200);
-  analogWriteFreq(500); // Enable TFT display brightness
-  analogWrite(D0, 750); // Set display brightness using D0 as driver to TFT LED
-  pinMode(A0, INPUT);
-  tft.begin();
-  tft.setRotation(3);
-  tft.setTextSize(2);
-  tft.fillScreen(ILI9341_BLACK);
+  analogWriteFreq(500); // Enable TFT display brightness // Used on the Adafruit dislay to reduce screen brightness
+  analogWrite(D0, 750); // Set display brightness using D0 as driver to TFT LED // D0 is connected to the LED pin on the TFT
+  pinMode(A0, INPUT);   // The pin used for the analogue input to be displayed
+  tft.begin();          // Start TFT display support
+  tft.setRotation(3);   // Rotate through 270-degrees
+  tft.setTextSize(2);   // Set the default text size, until changed!
+  tft.fillScreen(ILI9341_BLACK); // Clear the screen
 }
 // ---------------------------------------------------
 
 void loop(){
-  display_meter(0);
-  input_value = analogRead(A0);    // Reads analogue input pin the result is 0 - 1023
-  input_value = input_value / 100; // scales reading from 0-1023 to 0-10
-  display_value(input_value);
-  delay(200);
+  display_meter(0);                // Draw the meter
+  input_value = analogRead(A0);    // Read an analogue input pin the result is 0 - 1023
+  input_value = input_value / 100; // scales reading from 0-1023 to 0-102.3, in effect 0-100
+  display_value(input_value);      // Undraw then Draw the meter needle
+  delay(delay_val);                // Wait a short while
 }  
 
 
